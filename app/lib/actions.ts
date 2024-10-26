@@ -6,6 +6,8 @@ import {z} from 'zod'; // 用于数据验证和解析
 import {sql} from '@vercel/postgres'; // 用于执行 SQL 查询
 import {revalidatePath} from 'next/cache'; // 用于重新验证 Next.js 应用程序的路由缓存
 import {redirect} from 'next/navigation'; // 用于导航重定向
+import {signIn} from '@/auth';
+import {AuthError} from 'next-auth';
 
 // 定义表单数据验证架构，包括ID、客户ID、金额、状态和日期
 const FormSchema = z.object({
@@ -114,5 +116,24 @@ export async function deleteInvoice(id: string) {
         revalidatePath('/dashboard/invoices');
     } catch (error) {
         return {message: 'Database Error: Failed to Delete Invoice.'};
+    }
+}
+
+export async function authenticate(
+    prevState: string | undefined,
+    formData: FormData,
+) {
+    try {
+        await signIn('credentials', formData);
+    } catch (error) {
+        if (error instanceof AuthError) {
+            switch (error.type) {
+                case 'CredentialsSignin':
+                    return 'Invalid credentials.';
+                default:
+                    return 'Something went wrong.';
+            }
+        }
+        throw error;
     }
 }
