@@ -46,3 +46,28 @@ export async function createInvoice(formData: FormData) {
     // 在创建发票后，重定向用户到'/dashboard/invoices'页面
     redirect('/dashboard/invoices');
 }
+
+const UpdateInvoice = FormSchema.omit({id: true, date: true});
+
+export async function updateInvoice(id: string, formData: FormData) {
+    // 解析并验证从表单获取的数据
+    const {customerId, amount, status} = CreateInvoice.parse({
+        customerId: formData.get('customerId'), // 获取客户ID
+        amount: formData.get('amount'), // 获取金额
+        status: formData.get('status'), // 获取订单状态
+    });
+    const amountInCents = amount * 100;
+    await sql`
+    UPDATE invoices
+    SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
+    WHERE id = ${id}
+  `;
+
+    revalidatePath('/dashboard/invoices');
+    redirect('/dashboard/invoices');
+}
+
+export async function deleteInvoice(id: string) {
+    await sql`DELETE FROM invoices WHERE id = ${id}`;
+    revalidatePath('/dashboard/invoices');
+}
